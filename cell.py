@@ -6,8 +6,8 @@ pygame.init()
 pygame.display.set_caption('Test game')
 screen = pygame.display.set_mode((640, 480), pygame.FULLSCREEN if 640 == 0 else 0)
 display = pygame.Surface((640, 480))
-player = {'coords':[0, 0], 'radius':25}
-camera = [-320, -240]
+player = {'x':0, 'y':0, 'r':25}
+camera = {'x':-320, 'y':-240}
 
 font = pygame.font.Font('PixeloidMono-1G8ae.ttf', 9)
 
@@ -27,13 +27,13 @@ game_state = MAIN_MENU
 menu_ptr = 0
 
 def apply_camera(char, camera):
-    return (char['coords'][0]-camera[0], char['coords'][1]-camera[1])
+    return (char['x']-camera['x'], char['y']-camera['y'])
 
 def distance(p1, p2):
-    distX = p1['coords'][0] - p2['coords'][0]
-    distY = p1['coords'][1] - p2['coords'][1]
+    distX = p1['x'] - p2['x']
+    distY = p1['y'] - p2['y']
     dist = ((distX**2) + (distY**2)) ** (1/2)
-    if dist <= (p1['radius'] + p2['radius']):
+    if dist <= (p1['r'] + p2['r']):
         return True
     return False
 
@@ -81,17 +81,21 @@ while running:
                     if menu_ptr == 0:
                         game_state = RUN_GAME
 
-                        player['radius'] = 25
-                        player['coords'] = [0, 0]
-                        camera = [-320, -240]
+                        player['x'] = 0
+                        player['y'] = 0
+                        player['r'] = 25
+
+                        camera['x'] = -320
+                        camera['y'] = -240
 
                         enemies_qt = random.randint(16, 30)
 
                         while enemies_qt > len(enemies):
                             enemy = {}
                             enemy['color'] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                            enemy['radius'] = random.randint(5,75)
-                            enemy['coords'] = [random.randint(-1500, 1500), random.randint(-1500, 1500)]
+                            enemy['r'] = random.randint(5,75)
+                            enemy['x'] = random.randint(-1500, 1500)
+                            enemy['y'] = random.randint(-1500, 1500)
 
                             found_collision = False
 
@@ -115,61 +119,59 @@ while running:
     elif game_state == RUN_GAME:
 
         print_text(font, display, f"Enemies: {len(enemies)}", 10, 10, center=False)
-        print_text(font, display, f"Coords: {player['coords']}", 450, 10, center=False)
+        print_text(font, display, f"Coords: {player['x']}, {player['y']}", 450, 10, center=False)
 
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
 
         keys = pygame.key.get_pressed()
-        if keys[K_RIGHT] and player['coords'][0] <= 1500:
-            player['coords'][0] += 1
-            camera[0] += 1
-        if keys[K_LEFT] and player['coords'][0] >= -1500:
-            player['coords'][0] -= 1
-            camera[0] -= 1
-        if keys [K_UP] and player['coords'][1] >= -1500:
-            player['coords'][1] -= 1
-            camera[1] -= 1
-        if keys [K_DOWN] and player['coords'][1] <= 1500:
-            player['coords'][1] += 1
-            camera[1] += 1
+        if keys[K_RIGHT] and player['x'] <= 1500:
+            player['x'] += 1
+            camera['x'] += 1
+        if keys[K_LEFT] and player['x'] >= -1500:
+            player['x'] -= 1
+            camera['x'] -= 1
+        if keys [K_UP] and player['y'] >= -1500:
+            player['y'] -= 1
+            camera['y'] -= 1
+        if keys [K_DOWN] and player['y'] <= 1500:
+            player['y'] += 1
+            camera['y'] += 1
 
         for i in range(-1500, 1501, 50):
-            start_coords = apply_camera({'coords':(i, -1500)}, camera)
+            start_coords = apply_camera({'x':i, 'y':-1500}, camera)
             if start_coords[0] > 0 and start_coords[0] < 640:
-                pygame.draw.line(display, (100, 64, 255), start_coords, apply_camera({'coords':(i, 1500)}, camera))
+                pygame.draw.line(display, (100, 64, 255), start_coords, apply_camera({'x':i, 'y':1500}, camera))
 
-            start_coords = apply_camera({'coords':(-1500, i)}, camera)
+            start_coords = apply_camera({'x':-1500, 'y':i}, camera)
             if start_coords[1] > 0 and start_coords[1] < 448:    
-                pygame.draw.line(display, (100, 64, 255), start_coords, apply_camera({'coords':(1500, i)}, camera))
+                pygame.draw.line(display, (100, 64, 255), start_coords, apply_camera({'x':1500, 'y':i}, camera))
 
         for enemy in enemies:
             enemy_coords = apply_camera(enemy, camera)
-            if enemy_coords[0]+enemy['radius'] > 0 and enemy_coords[0]-enemy['radius'] < 640 and enemy_coords[1]+enemy['radius'] > 0 and enemy_coords[1]-enemy['radius'] < 448: 
-                pygame.draw.circle(display, enemy['color'], enemy_coords, enemy['radius'], 0)
+            if enemy_coords[0]+enemy['r'] > 0 and enemy_coords[0]-enemy['r'] < 640 and enemy_coords[1]+enemy['r'] > 0 and enemy_coords[1]-enemy['r'] < 448: 
+                pygame.draw.circle(display, enemy['color'], enemy_coords, enemy['r'], 0)
                 
                 if distance(player, enemy):
                     print_text(font, display, "Collision detected", 10, 10, center=False)
-                    if player['radius'] > enemy['radius']:
+                    if player['r'] > enemy['r']:
                         enemies.remove(enemy)
-                        player['radius'] += enemy['radius']/2
+                        player['r'] += enemy['r']/2
                         if len(enemies) == 0:
                             game_state = VICTORY 
                             enemies = []
-                    elif enemy['radius'] > player['radius'] :
+                    elif enemy['r'] > player['r'] :
                         game_state = GAME_OVER
                         enemies = []
 
-        pygame.draw.circle(display, (110, 42, 235), apply_camera(player, camera), player['radius'], 0)
-        pygame.draw.circle(display, (255, 255, 255), apply_camera(player, camera), player['radius'], 3)
+        pygame.draw.circle(display, (110, 42, 235), apply_camera(player, camera), player['r'], 0)
+        pygame.draw.circle(display, (255, 255, 255), apply_camera(player, camera), player['r'], 3)
 
     elif game_state == ONLINE_GAME:
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
-
-        ss.send(codecs.encode('ola\n'))
 
 
     elif game_state == GAME_OVER:

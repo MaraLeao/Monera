@@ -1,6 +1,7 @@
 import pygame 
 import random
 from pygame.locals import *
+import time
 
 pygame.init()
 pygame.display.set_caption('Test game')
@@ -8,6 +9,9 @@ screen = pygame.display.set_mode((640, 480), pygame.FULLSCREEN if 640 == 0 else 
 display = pygame.Surface((640, 480))
 player = {'x':0, 'y':0, 'r':25}
 camera = {'x':-320, 'y':-240}
+
+fps_intv = time.time()
+cur_fps = 0
 
 font = pygame.font.Font('PixeloidMono-1G8ae.ttf', 9)
 
@@ -25,6 +29,8 @@ ONLINE_GAME = 5
 game_state = MAIN_MENU
 
 menu_ptr = 0
+
+clock = pygame.time.Clock()
 
 def apply_camera(char, camera):
     return (char['x']-camera['x'], char['y']-camera['y'])
@@ -118,9 +124,6 @@ while running:
     
     elif game_state == RUN_GAME:
 
-        print_text(font, display, f"Enemies: {len(enemies)}", 10, 10, center=False)
-        print_text(font, display, f"Coords: {player['x']}, {player['y']}", 450, 10, center=False)
-
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
@@ -167,6 +170,16 @@ while running:
 
         pygame.draw.circle(display, (110, 42, 235), apply_camera(player, camera), player['r'], 0)
         pygame.draw.circle(display, (255, 255, 255), apply_camera(player, camera), player['r'], 3)
+
+        if (time.time() - fps_intv) > 5:
+            cur_fps = clock.get_fps()
+            fps_intv = time.time()
+
+        clock.tick()
+
+        print_text(font, display, f"{cur_fps:.1f} FPS", 10, 20, center=False)
+        print_text(font, display, f"Enemies: {len(enemies)}", 10, 10, center=False)
+        print_text(font, display, f"Coords: {player['x']}, {player['y']}", 450, 10, center=False)
 
     elif game_state == ONLINE_GAME:
         for event in pygame.event.get():
